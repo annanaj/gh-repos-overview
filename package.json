@@ -1,9 +1,12 @@
 {
+	"name": "gh-repos-overview",
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
 		"dev:development": "env-cmd -f .env.development next dev",
+		"predeploy": "npm run build",
+		"deploy": "gh-pages -d dist",
 		"debug": "NODE_OPTIONS='--inspect' next dev",
 		"build": "next build",
 		"start": "next start",
