@@ -1,13 +1,11 @@
-import RepositoryDetails from './_components/RepositoryDetails';
+import RepositoriesList from './_components/RepositoriesList';
 
-const HomePage = () => {
-  return (
-      <div className="container m-20">
-        <h1 className="mb-8 text-4xl">GitHub Repository Details</h1>
+export default function HomePage() {
+	return (
+		<div className="container m-20">
+			<h1 className="mb-8 text-4xl">GitHub Repository Details</h1>
 
-        <RepositoryDetails owner="annanaj" repoName="news" />
-      </div>
-  );
+			<RepositoriesList owner="annanaj" />
+		</div>
+	);
 };
-
-export default HomePage;

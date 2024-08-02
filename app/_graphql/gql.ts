@@ -14,31 +14,48 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 });
 
 const query = gql`
-  query GetRepository($owner: String!, $name: String!) {
-    repository(owner: $owner, name: $name) {
-      id
-      name
-      description
-      createdAt
-      updatedAt
-      stargazerCount
-      primaryLanguage {
-        name
-      }
-      owner {
-        login
+  query GetRepositories($owner: String!, $first: Int) {
+    repositoryOwner(login: $owner) {
+      repositories(first: $first) {
+        nodes {
+          id
+          name
+          description
+          createdAt
+          updatedAt
+          stargazerCount
+          forkCount
+          issues {
+            totalCount
+          }
+          primaryLanguage {
+            name
+          }
+          owner {
+            login
+            avatarUrl
+          }
+        }
       }
     }
   }
 `;
 
-export const getRepository = async (owner: string, name: string): Promise<Repository | null> => {
+interface GetRepositoriesResponse {
+	repositoryOwner: {
+		repositories: {
+			nodes: Repository[];
+		};
+	};
+}
+
+export const getRepositories = async (owner: string, first: number = 10): Promise<Repository[]> => {
 	try {
-		const variables = { owner, name };
-		const data: { repository: Repository } = await client.request(query, variables);
-		return data.repository;
+		const variables = { owner, first };
+		const data: GetRepositoriesResponse = await client.request<GetRepositoriesResponse>(query, variables);
+		return data.repositoryOwner.repositories.nodes;
 	} catch (error) {
-		console.error('Error fetching repository:', error);
-		return null;
+		console.error('Error fetching repositories:', error);
+		return [];
 	}
 };
