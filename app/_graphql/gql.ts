@@ -16,7 +16,7 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 const query = gql`
   query GetRepositories($owner: String!, $first: Int) {
     repositoryOwner(login: $owner) {
-      repositories(first: $first) {
+      repositories(first: $first, privacy: PUBLIC) {
         nodes {
           id
           name
