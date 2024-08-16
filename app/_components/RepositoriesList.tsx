@@ -31,7 +31,7 @@ export default function RepositoriesList({ owner }: RepositoriesProps) {
 			}
 		};
 
-		fetchRepositories();
+		void fetchRepositories();
 	}, [owner]);
 
 	if (loading) {
