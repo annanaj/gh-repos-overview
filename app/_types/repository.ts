@@ -16,11 +16,7 @@ export interface Repository {
 		login: string;
 		avatarUrl: string;
 		name?: string;
-		bio?: string;
 		followers?: {
-			totalCount: number;
-		};
-		membersWithRole?: {
 			totalCount: number;
 		};
 	};
