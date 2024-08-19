@@ -13,10 +13,10 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 	},
 });
 
-const query = gql`
-  query GetRepositories($owner: String!, $first: Int) {
-    repositoryOwner(login: $owner) {
-      repositories(first: $first, privacy: PUBLIC) {
+const createQuery = (owners: string[], first: number) => {
+	const ownerQueries = owners.map((owner, index) => `
+    user${index}: repositoryOwner(login: "${owner}") {
+      repositories(first: ${first}, privacy: PUBLIC) {
         nodes {
           id
           name
@@ -38,24 +38,36 @@ const query = gql`
         }
       }
     }
-  }
-`;
+  `);
 
-interface GetRepositoriesResponse {
-	repositoryOwner: {
+	return gql`
+    query GetRepositories {
+      ${ownerQueries.join('\n')}
+    }
+  `;
+};
+
+interface RepositoriesResponse {
+	[key: string]: {
 		repositories: {
 			nodes: Repository[];
 		};
 	};
 }
 
-export const getRepositories = async (owner: string, first: number = 10): Promise<Repository[]> => {
+export const getRepositoriesForMultipleUsers = async (owners: string[], first: number = 10): Promise<Record<string, Repository[]>> => {
 	try {
-		const variables = { owner, first };
-		const data: GetRepositoriesResponse = await client.request<GetRepositoriesResponse>(query, variables);
-		return data.repositoryOwner.repositories.nodes;
+		const query = createQuery(owners, first);
+		const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
+
+		const repositoriesByUser: Record<string, Repository[]> = {};
+		owners.forEach((owner, index) => {
+			repositoriesByUser[owner] = data[`user${index}`].repositories.nodes;
+		});
+
+		return repositoriesByUser;
 	} catch (error) {
 		console.error('Error fetching repositories:', error);
-		return [];
+		return {};
 	}
 };

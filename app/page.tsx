@@ -5,7 +5,7 @@ export default function HomePage() {
 		<div className="container m-20">
 			<h1 className="mb-8 text-4xl">GitHub Repository Details</h1>
 
-			<RepositoriesList owner="annanaj" />
+			<RepositoriesList owners={['bradfrost', 'csswizardry', 'addyosmani', 'taniarascia', 'gaearon', 'LeaVerou']} />
 		</div>
 	);
 };
