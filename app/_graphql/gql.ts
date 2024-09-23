@@ -13,10 +13,10 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 	},
 });
 
-const createQuery = (owners: string[], first: number) => {
+const createQuery = (owners: string[], first: number, cursor: string | null = null) => {
 	const ownerQueries = owners.map((owner, index) => `
     user${index}: repositoryOwner(login: "${owner}") {
-      repositories(first: ${first}, privacy: PUBLIC) {
+      repositories(first: ${first}, after: ${cursor ? `"${cursor}"` : null}) {
         nodes {
           id
           name
@@ -36,6 +36,10 @@ const createQuery = (owners: string[], first: number) => {
             avatarUrl
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   `);
@@ -51,19 +55,46 @@ interface RepositoriesResponse {
 	[key: string]: {
 		repositories: {
 			nodes: Repository[];
+			pageInfo: {
+				hasNextPage: boolean;
+				endCursor: string;
+			};
 		};
 	};
 }
 
-export const getRepositoriesForMultipleUsers = async (owners: string[], first: number = 10): Promise<Record<string, Repository[]>> => {
+export const getRepositoriesForMultipleUsers = async (
+	owners: string[],
+	first: number = 9,
+	cursor: string | null = null
+): Promise<Record<string, Repository[]>> => {
 	try {
-		const query = createQuery(owners, first);
-		const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
+		const fetchAllRepositories = async (owner: string): Promise<Repository[]> => {
+			let allRepositories: Repository[] = [];
+			let hasNextPage = true;
+			let endCursor: string | null = cursor;
+
+			while (hasNextPage) {
+				const query = createQuery([owner], first, endCursor);
+				const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
+
+				const userRepos = data[`user0`]?.repositories;
+				if (userRepos) {
+					allRepositories = allRepositories.concat(userRepos.nodes);
+					hasNextPage = userRepos.pageInfo.hasNextPage;
+					endCursor = userRepos.pageInfo.endCursor;
+				} else {
+					hasNextPage = false;
+				}
+			}
+
+			return allRepositories;
+		};
 
 		const repositoriesByUser: Record<string, Repository[]> = {};
-		owners.forEach((owner, index) => {
-			repositoriesByUser[owner] = data[`user${index}`].repositories.nodes;
-		});
+		for (const owner of owners) {
+			repositoriesByUser[owner] = await fetchAllRepositories(owner);
+		}
 
 		return repositoriesByUser;
 	} catch (error) {

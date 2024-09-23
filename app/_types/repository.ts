@@ -20,4 +20,5 @@ export interface Repository {
 			totalCount: number;
 		};
 	};
+	privacy: string;
 }
