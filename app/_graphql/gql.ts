@@ -13,9 +13,10 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 	},
 });
 
+// Vytvoření dotazu pro více vlastníků najednou
 const createQuery = (owners: string[], first: number, cursor: string | null = null) => {
-	const ownerQueries = owners.map((owner, index) => `
-    user${index}: repositoryOwner(login: "${owner}") {
+	const ownerQueries = owners.map((owner) => `
+    ${owner}: repositoryOwner(login: "${owner}") {
       repositories(first: ${first}, after: ${cursor ? `"${cursor}"` : null}) {
         nodes {
           id
@@ -51,13 +52,14 @@ const createQuery = (owners: string[], first: number, cursor: string | null = nu
   `;
 };
 
+// Typ odpovědi z GraphQL
 interface RepositoriesResponse {
 	[key: string]: {
 		repositories: {
 			nodes: Repository[];
 			pageInfo: {
 				hasNextPage: boolean;
-				endCursor: string;
+				endCursor: string | null;
 			};
 		};
 	};
@@ -69,36 +71,25 @@ export const getRepositoriesForMultipleUsers = async (
 	cursor: string | null = null
 ): Promise<Record<string, Repository[]>> => {
 	try {
-		const fetchAllRepositories = async (owner: string): Promise<Repository[]> => {
-			let allRepositories: Repository[] = [];
-			let hasNextPage = true;
-			let endCursor: string | null = cursor;
-
-			while (hasNextPage) {
-				const query = createQuery([owner], first, endCursor);
-				const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
-
-				const userRepos = data[`user0`]?.repositories;
-				if (userRepos) {
-					allRepositories = allRepositories.concat(userRepos.nodes);
-					hasNextPage = userRepos.pageInfo.hasNextPage;
-					endCursor = userRepos.pageInfo.endCursor;
-				} else {
-					hasNextPage = false;
-				}
-			}
-
-			return allRepositories;
-		};
-
 		const repositoriesByUser: Record<string, Repository[]> = {};
-		for (const owner of owners) {
-			repositoriesByUser[owner] = await fetchAllRepositories(owner);
-		}
+		let hasNextPage = true;
+		let endCursor: string | null = cursor;
+
+		// Spustíme jediný požadavek pro všechny vlastníky najednou
+		const query = createQuery(owners, first, endCursor);
+		const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
+
+		// Pro každýho uživatele ukládáme výsledky
+		owners.forEach((owner) => {
+			const userRepos = data[owner]?.repositories;
+			if (userRepos) {
+				repositoriesByUser[owner] = userRepos.nodes;
+			}
+		});
 
 		return repositoriesByUser;
 	} catch (error) {
-		console.error('Error fetching repositories:', error);
+		console.error('Error fetching repositories:', { owners, error });
 		return {};
 	}
 };
