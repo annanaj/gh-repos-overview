@@ -23,8 +23,7 @@ export default function RepositoriesGrid({ owners }: RepositoriesProps) {
 			try {
 				const repoData = await getRepositoriesForMultipleUsers(owners, 9);
 				setRepositories(repoData);
-
-				// Initialize the expandedOwners state to collapse all initially
+				
 				const initialExpandedState: Record<string, boolean> = {};
 				owners.forEach(owner => {
 					initialExpandedState[owner] = false;
@@ -80,17 +79,15 @@ export default function RepositoriesGrid({ owners }: RepositoriesProps) {
 							<h2 className="text-3xl font-medium">
 								{ownerData?.name || ownerData?.login}
 							</h2>
-							{/* Toggle outline arrow */}
 							<span className="text-xl">
 								{isExpanded ? '▴' : '▾'}
 							</span>
 						</div>
 
-						{/* Conditionally render the repositories grid */}
 						{isExpanded && (
 							<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 								{repos.length > 0 ? (
-									repos.slice(0, 9).map((repo) => (
+									repos.slice(0, 6).map((repo) => (
 										<RepositoryCard key={repo.id} repository={repo} />
 									))
 								) : (

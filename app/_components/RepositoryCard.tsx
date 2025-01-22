@@ -7,7 +7,7 @@ type RepositoryDetailProps = {
 };
 
 export default function RepositoryCard({ repository }: RepositoryDetailProps) {
-	const repoUrl = `https://github.com/${repository.owner.login}/${repository.name}`; // Construct the repository URL
+	const repoUrl = `https://github.com/${repository.owner.login}/${repository.name}`;
 
 	return (
 		<article className="flex flex-col rounded-lg bg-gray-50 p-8 shadow-lg text-slate-900 max-w-md">
