@@ -25,7 +25,6 @@ export default function UserDetails() {
 		const fetchRepositories = async () => {
 			try {
 				const repoData = await getRepositoriesForMultipleUsers([ownerNumber], 100);
-				console.log('Fetched repo data:', repoData);  // Logování dat pro debugging
 				const repositoriesData = repoData[ownerNumber]?.map((repo: any) => repo) || [];
 
 				if (repositoriesData.length === 0) {
@@ -51,8 +50,7 @@ export default function UserDetails() {
 	if (error) {
 		return <p>{error}</p>;
 	}
-
-	// Zkontroluj, že ownerData je definováno
+	
 	const ownerData = repositories[0]?.owner;
 	if (!ownerData) {
 		return <p>No repositories data available for this user.</p>;
