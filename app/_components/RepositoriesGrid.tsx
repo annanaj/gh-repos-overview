@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { getRepositoriesForMultipleUsers } from '../_graphql/gql';
-import { Repository } from '../_types/repository';
+import { type Repository } from '../_types/repository';
 import RepositoryCard from './RepositoryCard';
 
 type RepositoriesProps = {

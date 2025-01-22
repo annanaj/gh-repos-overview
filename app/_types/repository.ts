@@ -1,4 +1,6 @@
-export interface Repository {
+export type Repository = {
+    nodes: any;
+    pageInfo: any;
 	id: string;
 	name: string;
 	description: string;
@@ -21,4 +23,16 @@ export interface Repository {
 		};
 	};
 	privacy: string;
+}
+
+export type RepositoriesQueryResponse = {
+	[owner: string]: {
+		repositories: {
+			nodes: Repository[];
+			pageInfo: {
+				hasNextPage: boolean;
+				endCursor: string | null;
+			};
+		};
+	};
 }

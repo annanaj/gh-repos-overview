@@ -1,5 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request';
-import { Repository } from '../_types/repository';
+import { type Repository, type RepositoriesQueryResponse } from '../_types/repository';
 
 const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
 
@@ -13,7 +13,7 @@ const client = new GraphQLClient('https://api.github.com/graphql', {
 	},
 });
 
-// Vytvoření dotazu pro více vlastníků najednou
+// query pro vsechny vlastniky najednou, zrychli to fetch
 const createQuery = (owners: string[], first: number, cursor: string | null = null) => {
 	const ownerQueries = owners.map((owner) => `
     ${owner}: repositoryOwner(login: "${owner}") {
@@ -52,19 +52,6 @@ const createQuery = (owners: string[], first: number, cursor: string | null = nu
   `;
 };
 
-// Typ odpovědi z GraphQL
-interface RepositoriesResponse {
-	[key: string]: {
-		repositories: {
-			nodes: Repository[];
-			pageInfo: {
-				hasNextPage: boolean;
-				endCursor: string | null;
-			};
-		};
-	};
-}
-
 export const getRepositoriesForMultipleUsers = async (
 	owners: string[],
 	first: number = 9,
@@ -72,14 +59,13 @@ export const getRepositoriesForMultipleUsers = async (
 ): Promise<Record<string, Repository[]>> => {
 	try {
 		const repositoriesByUser: Record<string, Repository[]> = {};
-		let hasNextPage = true;
 		let endCursor: string | null = cursor;
 
-		// Spustíme jediný požadavek pro všechny vlastníky najednou
+		// tady to spusti teda query pro vsechny owners najednou
 		const query = createQuery(owners, first, endCursor);
-		const data: RepositoriesResponse = await client.request<RepositoriesResponse>(query);
+		const data: RepositoriesQueryResponse = await client.request<RepositoriesQueryResponse>(query);
 
-		// Pro každýho uživatele ukládáme výsledky
+		// a tady je rozpadnem na jednotlive ownery
 		owners.forEach((owner) => {
 			const userRepos = data[owner]?.repositories;
 			if (userRepos) {

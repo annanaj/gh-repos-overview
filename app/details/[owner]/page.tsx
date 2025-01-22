@@ -2,33 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 import { getRepositoriesForMultipleUsers } from '../../_graphql/gql';
 import { Repository } from '../../_types/repository';
 import RepositoryCard from '../../_components/RepositoryCard';
 
 export default function UserDetails() {
-	const searchParams = useSearchParams();
-	const owner = searchParams.get('owner');
-
+	const { owner } = useParams();
+	const ownerNumber = Array.isArray(owner) ? owner[0] : owner;
 	const [repositories, setRepositories] = useState<Repository[]>([]);
-	const [paginationState, setPaginationState] = useState<{ endCursor: string | null, hasNextPage: boolean }>({ endCursor: null, hasNextPage: true });
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (!owner) return;
+		if (!owner) {
+			setError('Owner not specified.');
+			setLoading(false);
+			return;
+		}
 
 		const fetchRepositories = async () => {
 			try {
-				const repoData = await getRepositoriesForMultipleUsers([owner], 9);
-				setRepositories(repoData[owner] || []);
+				const repoData = await getRepositoriesForMultipleUsers([ownerNumber], 100);
+				console.log('Fetched repo data:', repoData);  // Logování dat pro debugging
+				const repositoriesData = repoData[ownerNumber]?.map((repo: any) => repo) || [];
 
-				setPaginationState({
-					endCursor: repoData[owner]?.length ? repoData[owner][repoData[owner].length - 1].id : null,
-					hasNextPage: repoData[owner]?.length >= 9,
-				});
+				if (repositoriesData.length === 0) {
+					setError('No repositories found.');
+				}
+
+				setRepositories(repositoriesData);
 			} catch (error) {
 				console.error('Error fetching repositories:', error);
 				setError('Error fetching repositories.');
@@ -40,28 +44,7 @@ export default function UserDetails() {
 		void fetchRepositories();
 	}, [owner]);
 
-	const loadMore = async () => {
-		if (!paginationState.hasNextPage || !owner) return;
-
-		setLoading(true);
-		try {
-			const newRepoData = await getRepositoriesForMultipleUsers([owner], 9, paginationState.endCursor);
-
-			setRepositories((prevRepos) => [...prevRepos, ...newRepoData[owner] || []]);
-
-			setPaginationState({
-				endCursor: newRepoData[owner]?.length ? newRepoData[owner][newRepoData[owner].length - 1].id : null,
-				hasNextPage: newRepoData[owner]?.length >= 9,
-			});
-		} catch (error) {
-			console.error('Error loading more repositories:', error);
-			setError('Error loading more repositories.');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	if (loading && !repositories.length) {
+	if (loading) {
 		return <p>Loading...</p>;
 	}
 
@@ -69,12 +52,16 @@ export default function UserDetails() {
 		return <p>{error}</p>;
 	}
 
+	// Zkontroluj, že ownerData je definováno
 	const ownerData = repositories[0]?.owner;
+	if (!ownerData) {
+		return <p>No repositories data available for this user.</p>;
+	}
 
 	return (
 		<div className="container m-20">
 			<div className="flex items-center gap-4 mb-4">
-				{ownerData?.avatarUrl && (
+				{ownerData.avatarUrl && (
 					<Image
 						src={ownerData.avatarUrl}
 						alt={`${ownerData.login}'s avatar`}
@@ -83,7 +70,7 @@ export default function UserDetails() {
 						className="rounded-full"
 					/>
 				)}
-				<h2 className="text-3xl font-medium">{ownerData?.name || ownerData?.login}</h2>
+				<h2 className="text-3xl font-medium">{ownerData.name || ownerData.login}</h2>
 			</div>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 				{repositories.length > 0 ? (
@@ -94,14 +81,6 @@ export default function UserDetails() {
 					<p>No repositories found for {owner}.</p>
 				)}
 			</div>
-			{paginationState.hasNextPage && (
-				<button
-					onClick={loadMore}
-					className="mt-4 p-2 bg-blue-500 text-white rounded"
-				>
-					Load More
-				</button>
-			)}
 		</div>
 	);
 }
