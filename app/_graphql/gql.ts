@@ -1,5 +1,6 @@
-import { GraphQLClient, gql } from 'graphql-request';
-import { type Repository, type RepositoriesQueryResponse } from '../_types/repository';
+import {gql, GraphQLClient} from 'graphql-request';
+import {type RepositoriesQueryResponse} from '../_types/repository';
+import {type Repository} from '../_types/generated';
 
 const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
 
@@ -59,13 +60,11 @@ export const getRepositoriesForMultipleUsers = async (
 ): Promise<Record<string, Repository[]>> => {
 	try {
 		const repositoriesByUser: Record<string, Repository[]> = {};
-		let endCursor: string | null = cursor;
-
 		// tady to spusti teda query pro vsechny owners najednou
-		const query = createQuery(owners, first, endCursor);
+		const query = createQuery(owners, first, cursor);
 		const data: RepositoriesQueryResponse = await client.request<RepositoriesQueryResponse>(query);
 
-		// a tady je rozpadnem na jednotlive ownery
+		// a tady je rozpadneme na jednotlive ownery
 		owners.forEach((owner) => {
 			const userRepos = data[owner]?.repositories;
 			if (userRepos) {

@@ -1,0 +1,15 @@
+schema:
+  - 'https://api.github.com/graphql':
+      headers:
+        # hardcode token to access gh api when generate the types via codegen
+        Authorization: 'Bearer ${GITHUB_TOKEN}'
+        User-Agent: 'gh-repos-overview'
+
+documents:
+  - './app/_graphql/gql.ts'
+
+generates:
+  ./app/_types/generated.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
